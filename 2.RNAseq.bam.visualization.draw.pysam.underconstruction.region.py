@@ -22,18 +22,17 @@ genelist     = list(set(df_gff_ix.index.get_level_values('genename')))
 
 
 #+ global vars.
-genename                = sys.argv[1]#'Cre15.g643503.v5.5'
-primerlist              = [['ATGGCAGCCAAGGGAA','TCAGCCCCACGTGAG']]
 bamlist                 = ['/ref/analysis/Cre/braker/braker.try5_mario/intron3000.merge.sorted.bam',\
                            '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521680/SRR1521680.sorted.bam',\
                            '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521685/SRR1521685.sorted.bam',\
                            '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/unmapped_all/polya.reads.merged.fq.sorted.bam']
 
 
-strand                  = df_gff_ix.loc[(genename,'1','mRNA')][6].values[0]
-chromosome, left, right = df_gff_ix.loc[(genename,'1','mRNA')][[0,3,4]].values[0]
+strand                  = '+'
+chromosome, left, right = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+genename                = '%s_%d_%d'%(chromosome, left, right)
 geneseq                 = dic_fa[chromosome][left-1:right]
-outfilename             = genename+'.bamvisgene.svg'
+outfilename             = '%s_%d_%d.bamvisgene.svg'%(chromosome, left, right)
 Outfile                 = open(outfilename,'w')
 #- global vars. done
 
@@ -373,9 +372,9 @@ def draw_alignment(start_height,chromosome,left,right,file_bam,total_canvas_rows
 
 
 init_svg()
-endp = draw_gene(5,left,right,genename)
+#endp = draw_gene(5,left,right,genename)
 #endp = draw_primer(endp,primerlist,strand)
-
+endp = 5
 for bam in bamlist:
    endp = draw_alignment(endp,chromosome,left,right,bam,20)
    endp = draw_words(endp,bam.split('/')[-1])
