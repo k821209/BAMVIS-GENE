@@ -11,8 +11,8 @@ import kang
 import pysam
 from tqdm import tqdm
 #+ preparing references
-df_gff_index = pd.read_pickle('/ref/analysis/pipelines/pandas_df/Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk')
-file_fa      = '/ref/analysis/DroughtNet/References/Creinhardtii/Creinhardtii_281_v5.0.fa'
+df_gff_index = pd.read_pickle('./Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk')
+file_fa      = './Creinhardtii_281_v5.0.fa'
 dic_fa       = kang.Fasta2dic(file_fa)
 df_gff_ix    = df_gff_index.reset_index().set_index(['genename','longest',2])
 df_gff_ix.sortlevel(inplace=True)
@@ -22,10 +22,8 @@ genelist     = list(set(df_gff_ix.index.get_level_values('genename')))
 
 
 #+ global vars.
-bamlist                 = ['/ref/analysis/Cre/braker/braker.try5_mario/intron3000.merge.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521680/SRR1521680.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521685/SRR1521685.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/unmapped_all/polya.reads.merged.fq.sorted.bam']
+bamlist                 = ['../merged/all.merged.bam',\
+                           './polya.reads.merged.fq.sorted.bam']
 
 
 strand                  = '+'
@@ -43,7 +41,7 @@ each_space    = 2
 box_height    = 3
 bridge_height = 2
 genestart     = 3
-total_canvas_rows = 10 # 2 for gene model 
+total_canvas_rows = 50 # 2 for gene model 
 canvas_width      = 1000
 canvas_height     = (total_canvas_rows + 10)*(each_height+each_space)*len(bamlist) + 1000 # 1000 : just more blank 
 real_width        = right-left+1+100+100
@@ -64,7 +62,10 @@ c_sstrand = '#f5b024'
 
 #+ defs 
 def init_svg():   
-    print('''<svg height="%d" width="%d">'''%(canvas_height,canvas_width),file=Outfile)
+    print('''<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg height="%s" width="%s" version="1.1" viewBox="0 0 %s %s" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">'''%(canvas_height,canvas_width,canvas_width,canvas_height),file=Outfile)
 def end_svg():
     print('''</svg>
     ''',file=Outfile)
@@ -181,7 +182,7 @@ def cigar_parse(cigar):
 # maybe it is better to have table in advance using pysam 
 
 
-def draw_alignment(start_height,chromosome,left,right,file_bam,total_canvas_rows=5):
+def draw_alignment(start_height,chromosome,left,right,file_bam,total_canvas_rows=10):
     real_width        = right-left+1+100+100
     gene_space        = np.zeros([total_canvas_rows,real_width])
     samfile           = pysam.Samfile( file_bam, "rb" )
@@ -376,7 +377,7 @@ init_svg()
 #endp = draw_primer(endp,primerlist,strand)
 endp = 5
 for bam in bamlist:
-   endp = draw_alignment(endp,chromosome,left,right,bam,20)
+   endp = draw_alignment(endp,chromosome,left,right,bam,total_canvas_rows)
    endp = draw_words(endp,bam.split('/')[-1])
    print(1)
 
