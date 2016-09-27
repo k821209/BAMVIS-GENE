@@ -10,6 +10,7 @@ import numpy as np
 import kang
 import pysam
 from tqdm import tqdm
+import glob
 #+ preparing references
 df_gff_index = pd.read_pickle('./Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk')
 file_fa      = './Creinhardtii_281_v5.0.fa'
@@ -22,11 +23,13 @@ genelist     = list(set(df_gff_ix.index.get_level_values('genename')))
 
 
 #+ global vars.
-bamlist                 = ['../merged/all.merged.bam',\
-                           './polya.reads.merged.fq.sorted.bam']
+#bamlist                 = ['../merged/all.merged.bam',\
+#                           './polya.reads.merged.fq.sorted.bam']
+bamlist = glob.glob('../mapped/*.sorted.bam')
+bamlist += ['./polya.reads.merged.fq.sorted.bam']
+bamlist += ['../merged/all.merged.bam']
 
-
-strand                  = '+'
+strand                  = sys.argv[4]
 chromosome, left, right = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 genename                = '%s_%d_%d'%(chromosome, left, right)
 geneseq                 = dic_fa[chromosome][left-1:right]
