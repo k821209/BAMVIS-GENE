@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 import sys
-sys.path.append('./')
+sys.path.append('/mnt/c/ubuntu.download/pipelines')
 import pandas as pd
 import subprocess
 import re
@@ -11,10 +11,10 @@ import kang
 import pysam
 from tqdm import tqdm
 #+ preparing references
-df_gff_index = pd.read_pickle('/ref/analysis/pipelines/pandas_df/Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk')
-file_fa      = '/ref/analysis/DroughtNet/References/Creinhardtii/Creinhardtii_281_v5.0.fa'
+df_gff_index = pd.read_pickle('/mnt/c/ubuntu.download/pipelines/pandas_df/Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk')
+file_fa      = './Creinhardtii_281_v5.0.fa'
 dic_fa       = kang.Fasta2dic(file_fa)
-df_gff_ix    = df_gff_index.reset_index().set_index(['transcriptname'])
+df_gff_ix    = df_gff_index.reset_index().set_index(['transcriptname',2])
 df_gff_ix.sortlevel(inplace=True)
 
 #- preparing references done
@@ -23,14 +23,11 @@ df_gff_ix.sortlevel(inplace=True)
 #+ global vars.
 genename                = sys.argv[1]#'Cre15.g643503.v5.5'
 primerlist              = [['ATGGCAGCCAAGGGAA','TCAGCCCCACGTGAG']]
-bamlist                 = ['/ref/analysis/Cre/braker/braker.try5_mario/intron3000.merge.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521680/SRR1521680.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/hisat2/nitdef_0hr/SRR1521685/SRR1521685.sorted.bam',\
-                           '/ref/analysis/Cre/tophat/stranded_nitrogen_sulfur/unmapped_all/polya.reads.merged.fq.sorted.bam']
+bamlist                 = ['./all.merged.bam']
 
 
-strand                  = df_gff_ix.loc[(genename,'1','mRNA')][6].values[0]
-chromosome, left, right = df_gff_ix.loc[(genename,'1','mRNA')][[0,3,4]].values[0]
+strand                  = df_gff_ix.loc[(genename)][6].values[0]
+chromosome, left, right = df_gff_ix.loc[(genename,'mRNA')][[0,3,4]].values[0]
 geneseq                 = dic_fa[chromosome][left-1:right]
 outfilename             = genename+'.bamvisgene.svg'
 Outfile                 = open(outfilename,'w')
@@ -63,8 +60,12 @@ c_sstrand = '#f5b024'
 #- color conf done
 
 #+ defs 
-def init_svg():   
-    print('''<svg height="%d" width="%d">'''%(canvas_height,canvas_width),file=Outfile)
+def init_svg():  
+   print('''<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg height="%s" width="%s" version="1.1" viewBox="0 0 %s %s" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">'''%(canvas_height,canvas_width,canvas_width,canvas_height),file=Outfile)  
+    
 def end_svg():
     print('''</svg>
     ''',file=Outfile)
