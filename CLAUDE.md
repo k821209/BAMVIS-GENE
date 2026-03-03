@@ -6,19 +6,41 @@ BAMVIS-GENE is a bioinformatics visualization tool that renders RNA-seq BAM alig
 
 The tool targets plant genomics data (Arabidopsis thaliana, Chlamydomonas reinhardtii, Eutrema salsugineum) using Phytozome GFF3 annotation files.
 
+## Quick Start
+
+```sh
+# Install dependencies
+pip install -r requirements.txt
+
+# Step 1: Index a GFF3 file
+python bamvis.py index Athaliana_167_TAIR10.gene.gff3
+
+# Step 2: Draw a gene
+python bamvis.py draw --pickle Athaliana_167_TAIR10.gene.gff3.pandas.df.pk \
+                      --bam sample.sorted.bam \
+                      --gene AT1G01010
+
+# Step 2: Draw a genomic region (no gene model)
+python bamvis.py draw --pickle Creinhardtii_281_v5.5.gene.gff3.pandas.df.pk \
+                      --bam reads.sorted.bam \
+                      --region Chr9:3586521-3608027 --strand +
+```
+
 ## Repository Structure
 
 ```
 BAMVIS-GENE/
-├── 1.RNAseq.bam.visualization.gffindexing.py          # Step 1: GFF3 → pandas pickle (longest transcript filter)
-├── 1.RNAseq.bam.visualization.gffindexing.nonlongest.py # Step 1 variant: no longest transcript filter
-├── 2.RNAseq.bam.visualization.draw.py                  # Step 2: Original samtools-based SVG drawer
-├── 2.RNAseq.bam.visualization.draw_old.py              # Step 2: Older copy of samtools-based drawer
-├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.py           # Step 2: pysam-based, single gene, hardcoded paths
-├── 2.RNAseq.bam.visualization.draw.pysam.transcript.underconstruction.py # Step 2: pysam-based, transcript-level indexing
-├── 2.RNAseq.bam.visualization.draw.pysam.transcript.underconstruction.all.py # Step 2: pysam batch mode (all transcripts)
-├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.region.py    # Step 2: pysam-based, arbitrary genomic region
-├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.region.notebook.ipynb # Jupyter notebook version (region mode)
+├── bamvis.py                                            # Unified CLI tool (Python 3, argparse)
+├── requirements.txt                                     # pip dependencies
+├── 1.RNAseq.bam.visualization.gffindexing.py          # Legacy Step 1: GFF3 → pickle (longest transcript filter)
+├── 1.RNAseq.bam.visualization.gffindexing.nonlongest.py # Legacy Step 1 variant: no longest transcript filter
+├── 2.RNAseq.bam.visualization.draw.py                  # Legacy Step 2: samtools-based SVG drawer
+├── 2.RNAseq.bam.visualization.draw_old.py              # Legacy Step 2: older copy
+├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.py           # Legacy: pysam, single gene, hardcoded paths
+├── 2.RNAseq.bam.visualization.draw.pysam.transcript.underconstruction.py # Legacy: pysam, transcript-level indexing
+├── 2.RNAseq.bam.visualization.draw.pysam.transcript.underconstruction.all.py # Legacy: pysam batch mode
+├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.region.py    # Legacy: pysam, arbitrary region
+├── 2.RNAseq.bam.visualization.draw.pysam.underconstruction.region.notebook.ipynb # Jupyter notebook (region mode)
 ├── kang.py                                              # Shared utility module (bioinformatics helpers)
 ├── *.gff3                                               # GFF3 annotation files (large, Phytozome format)
 ├── *.pandas.df.pk                                       # Pre-built pandas pickle index files
@@ -27,49 +49,77 @@ BAMVIS-GENE/
 └── README.md
 ```
 
-## Two-Step Pipeline
+## Unified CLI: bamvis.py
 
-### Step 1 — GFF Indexing (`1.*.py`)
+`bamvis.py` consolidates all script variants into a single Python 3-compatible CLI with two subcommands.
 
-Parses a GFF3 file into a pandas DataFrame indexed by gene name, serialized as a pickle (`.pandas.df.pk`).
+### `bamvis.py index` — GFF3 Indexing
 
 ```sh
-python 1.RNAseq.bam.visualization.gffindexing.py <gff3_file>
+python bamvis.py index <gff3_file> [--no-longest]
 # Output: <gff3_file>.pandas.df.pk
 ```
 
+Options:
+- `--no-longest` — Keep all transcripts instead of filtering for the longest per gene
+
+### `bamvis.py draw` — BAM Visualization
+
+```sh
+# Gene mode (draws gene model + reads)
+python bamvis.py draw --pickle <pk> --bam <bam1> [--bam <bam2>] --gene <gene_name>
+
+# Region mode (draws reads only, no gene model)
+python bamvis.py draw --pickle <pk> --bam <bam1> --region chr:start-end [--strand +/-]
+```
+
+Options:
+- `--pickle` — Pandas pickle index file (`.pandas.df.pk`)
+- `--bam` — BAM file path (repeat for multiple BAM files)
+- `--gene` — Gene name to visualize
+- `--region` — Genomic region as `chr:start-end`
+- `--strand` — Strand for region mode (`+` or `-`, default: `+`)
+- `--rows` — Max read packing rows (default: 20)
+- `--output` / `-o` — Output SVG filename (auto-generated if omitted)
+
+## Legacy Scripts
+
+The original numbered scripts (`1.*.py`, `2.*.py`) remain in the repository. They are Python 2 scripts with hardcoded paths. See the sections below for details if you need to work with them.
+
+### Legacy Step 1 — GFF Indexing (`1.*.py`)
+
+```sh
+python 1.RNAseq.bam.visualization.gffindexing.py <gff3_file>
+```
+
 Two variants:
-- **gffindexing.py** — Indexes by `(genename, longest)`, filtering for the longest transcript per gene
+- **gffindexing.py** — Indexes by `(genename, longest)`, filtering for longest transcript per gene
 - **gffindexing.nonlongest.py** — Indexes by `(genename)` only, keeping all transcripts
 
-### Step 2 — BAM Visualization (`2.*.py`)
-
-Reads the pickle index + BAM file(s), renders SVG output with gene model and aligned reads.
+### Legacy Step 2 — BAM Visualization (`2.*.py`)
 
 **Original (samtools-based):**
 ```sh
 python 2.RNAseq.bam.visualization.draw.py <pickle_file> <bam_file> <gene_name>
 ```
 
-**pysam-based variants** have hardcoded reference paths and BAM lists inside the scripts. Edit the script globals before running:
-```sh
-python 2.RNAseq.bam.visualization.draw.pysam.underconstruction.py <gene_name>
-```
-
-**Region-based variant:**
-```sh
-python 2.RNAseq.bam.visualization.draw.pysam.underconstruction.region.py <chromosome> <start> <end> <strand>
-```
+**pysam-based variants** have hardcoded reference paths and BAM lists inside the scripts. Edit the script globals before running.
 
 ## Dependencies
 
-- **Python 2** (uses `from __future__ import print_function`, older pandas API like `df.sort()`)
+```sh
+pip install -r requirements.txt
+```
+
 - `pandas` — DataFrame manipulation and GFF3 parsing
-- `pysam` — BAM file reading (install: `pip2 install pysam`)
+- `pysam` — BAM file reading
 - `numpy` — 2D array for read layout/packing
 - `tqdm` — Progress bars during BAM iteration
-- `samtools` — Required on PATH for the original (non-pysam) drawer
-- `kang.py` — Local utility module (must be importable; some scripts use `sys.path.append`)
+
+Legacy scripts additionally require:
+- **Python 2** with `from __future__ import print_function`
+- `samtools` on PATH (for the original non-pysam drawer)
+- `kang.py` importable (some scripts use `sys.path.append`)
 
 ## Utility Module: kang.py
 
@@ -89,20 +139,20 @@ Provides bioinformatics helper functions:
 - **Reads**: Packed vertically using a greedy row-packing algorithm (`gene_space` 2D array)
 - **Paired-end bridge**: V-shaped line connecting mate pairs
 - **Splice junctions**: Thin lines for N (intron skip) and I (insertion) CIGAR operations
-- **Color scheme** ("Haruhi theme" in pysam variants):
+- **Color scheme** ("Haruhi theme"):
   - UTR: `#f50002` (red)
   - CDS: `#53a1b5` (teal)
   - Forward strand reads: `#5d3c2d` (brown)
   - Reverse strand reads: `#f5b024` (gold)
-  - Original drawer uses: CDS=yellow, UTR=blue, reads=pink
+  - Legacy samtools drawer uses: CDS=yellow, UTR=blue, reads=pink
 
 ## Key Conventions for AI Assistants
 
-- **Python 2 codebase**: Use `from __future__ import print_function`. Avoid Python 3-only syntax. The `.sort()` calls use the old pandas API (not `.sort_values()`).
+- **bamvis.py is the primary entry point**: Use `bamvis.py` for new work. It is Python 3 compatible and uses `argparse` with no hardcoded paths.
+- **Legacy scripts are Python 2**: The `1.*.py` and `2.*.py` files use `from __future__ import print_function`, old pandas API (`df.sort()` instead of `df.sort_values()`, `df.sortlevel()` instead of `df.sort_index()`), and `dict.keys()` returning a list.
 - **No test suite or CI/CD**: There are no automated tests. Verify changes manually.
-- **No package manager**: Dependencies are installed globally via pip2. No requirements.txt or setup.py exists.
-- **Hardcoded paths**: Many pysam-based scripts contain hardcoded absolute paths to reference files and BAM files (e.g., `/ref/analysis/...`, `/mnt/c/ubuntu.download/...`). These must be edited per-environment.
-- **Script naming**: Files are numbered by pipeline step (`1.` = indexing, `2.` = drawing). Variants are appended as dot-separated descriptors.
+- **Hardcoded paths in legacy scripts**: Many pysam-based scripts contain hardcoded absolute paths (e.g., `/ref/analysis/...`, `/mnt/c/ubuntu.download/...`). These are not present in `bamvis.py`.
+- **Script naming**: Legacy files are numbered by pipeline step (`1.` = indexing, `2.` = drawing). Variants are appended as dot-separated descriptors.
 - **Large binary files in repo**: GFF3 files, pickle files, SAM files, and images are committed directly. Be mindful of repo size.
 - **Coordinate system**: GFF3 uses 1-based coordinates. A 100bp padding is added on each side of the gene region for visualization.
 - **CIGAR parsing**: Uses regex `r'(\d+)(\w)'` to parse CIGAR strings. Handles M (match), N (intron skip), and I (insertion) operations.
